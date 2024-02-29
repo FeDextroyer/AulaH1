@@ -1,3 +1,8 @@
+import re
+import unittest
+from io import StringIO
+from unittest.mock import patch
+
 class Funcionario:
     @staticmethod
     def formatar_nome(nome):
@@ -27,12 +32,23 @@ class Funcionario:
             return "Sênior"
 
     @staticmethod
-    def formatar_cpf(numero):
-        if len(numero) == 11 and numero.isdigit():
-            cpf_formatado = f'{numero[:3]}.{numero[3:6]}.{numero[6:9]}-{numero[9:]}'
-            return cpf_formatado
-        else:
-            raise ValueError("Digite um CPF válido.")
+    def validate_cpf(cpf: str) -> str:
+        cpf = re.sub(r'[^\d]', '', cpf)
+        
+        if len(cpf) != 11:
+            return "CPF inválido"
+    
+        total = sum(int(cpf[i]) * (10 - i) for i in range(9))
+        digit1 = (total * 10) % 11
+        if digit1 == 10:
+            digit1 = 0
+    
+        total += digit1 * 2
+        digit2 = (total * 10) % 11
+        if digit2 == 10:
+            digit2 = 0
+    
+        return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
 
     @staticmethod
     def validar_habilidades(habilidades):
@@ -55,24 +71,27 @@ def adicionar_funcionario(lista_funcionarios):
             nome_formatado = Funcionario.formatar_nome(nome_digitado)
             salario_formatado = Funcionario.formatar_salario(salario_digitado)
             nivel = Funcionario.nivel_profissional(float(salario_digitado))
-            cpf_formatado = Funcionario.formatar_cpf(numero_cpf)
-            lista_habilidades = Funcionario.validar_habilidades(habilidades_digitadas)
+            cpf_formatado = Funcionario.validate_cpf(numero_cpf)
+            habilidades_validas = Funcionario.validar_habilidades(habilidades_digitadas)
+            if habilidades_validas:
+                funcionario = {
+                    "Nome": nome_formatado,
+                    "Salário": salario_formatado,
+                    "Nível": nivel,
+                    "CPF": cpf_formatado,
+                    "Habilidades": habilidades_digitadas
+                }
+                lista_funcionarios.append(funcionario)
+                print("\nFuncionário adicionado com sucesso!")
+            else:
+                print("Funcionário inválido")
 
-            funcionario = {
-                "Nome": nome_formatado,
-                "Salário": salario_formatado,
-                "Nível": nivel,
-                "CPF": cpf_formatado,
-                "Habilidades": habilidades_digitadas
-            }
-            lista_funcionarios.append(funcionario)
-
-            print("\nFuncionário adicionado com sucesso!")
             opcao = input("\nDeseja adicionar outro funcionário? (1 - Sim, 2 - Voltar ao menu): ")
             if opcao != '1':
                 break
         except ValueError as ve:
             print(ve)
+            break
 
 
 def listar_funcionarios(lista_funcionarios):
@@ -126,3 +145,61 @@ if __name__ == '__main__':
             break
         else:
             print("\nOpção inválida. Escolha novamente.")
+
+class TestFuncionarioMethods(unittest.TestCase):
+    def test_formatar_nome(self):
+        self.assertEqual(Funcionario.formatar_nome("joao da silva"), "Joao Da Silva")
+        self.assertEqual(Funcionario.formatar_nome("maria"), "Maria")
+        with self.assertRaises(ValueError):
+            Funcionario.formatar_nome("")
+
+    def test_formatar_salario(self):
+        self.assertEqual(Funcionario.formatar_salario("2000"), "R$2,000.00")
+        self.assertEqual(Funcionario.formatar_salario("3500.50"), "R$3,500.50")
+        with self.assertRaises(ValueError):
+            Funcionario.formatar_salario("dois mil")
+    
+    def test_nivel_profissional(self):
+        self.assertEqual(Funcionario.nivel_profissional(1500), "Junior")
+        self.assertEqual(Funcionario.nivel_profissional(4000), "Pleno")
+        self.assertEqual(Funcionario.nivel_profissional(10000), "Sênior")
+
+    def test_validate_cpf(self):
+        self.assertEqual(Funcionario.validate_cpf("123.456.789-09"), "123.456.789-09")
+        self.assertEqual(Funcionario.validate_cpf("12345678909"), "123.456.789-09")
+        self.assertEqual(Funcionario.validate_cpf("00000000000"), "000.000.000-00")
+        self.assertEqual(Funcionario.validate_cpf("999.999.999-99"), "999.999.999-99")
+        self.assertEqual(Funcionario.validate_cpf("1234567890"), "CPF inválido")
+
+    def test_validar_habilidades(self):
+        self.assertTrue(Funcionario.validar_habilidades("Python;Java;SQL"))
+        self.assertFalse(Funcionario.validar_habilidades("Python;Python;Python"))
+        self.assertFalse(Funcionario.validar_habilidades("Python"))
+        self.assertFalse(Funcionario.validar_habilidades("Python;Java"))
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_adicionar_funcionario(self, mock_stdout):
+        input_values = ['Joao', '2000', '123.456.789-09', 'Python;Java;SQL', '2']
+        with patch('builtins.input', side_effect=input_values):
+            adicionar_funcionario([])
+            self.assertEqual(mock_stdout.getvalue().strip(), "Funcionário inválido")
+    
+    def test_listar_funcionarios(self):
+        lista_funcionarios = [
+            {"Nome": "Joao", "Salário": "R$2,000.00", "Nível": "Junior", "CPF": "123.456.789-09", "Habilidades": "Python;Java;SQL"}
+        ]
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            listar_funcionarios(lista_funcionarios)
+            self.assertIn("Joao", mock_stdout.getvalue().strip())
+
+    def test_apagar_funcionario(self):
+        lista_funcionarios = [
+            {"Nome": "Joao", "Salário": "R$2,000.00", "Nível": "Junior", "CPF": "123.456.789-09", "Habilidades": "Python;Java;SQL"}
+        ]
+        input_values = ['1', '2']
+        with patch('builtins.input', side_effect=input_values), patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            apagar_funcionario(lista_funcionarios)
+            self.assertEqual(len(lista_funcionarios), 0)
+
+if __name__ == '__main__':
+    unittest.main()

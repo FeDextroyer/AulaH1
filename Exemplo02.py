@@ -1,4 +1,7 @@
 # Jogo da velha em python
+import unittest
+from unittest.mock import patch
+from io import StringIO
 
 # Definir o tabuleiro como uma lista de 9 espaços vazios
 tabuleiro = [" " for i in range(9)]
@@ -16,6 +19,8 @@ def imprimir_tabuleiro():
     print("-+-+-")
     print(tabuleiro[6] + "|" + tabuleiro[7] + "|" + tabuleiro[8])
     print()
+    print("-------/---/-------")
+    print()    
 
 # Definir uma função para verificar se o tabuleiro está cheio
 def tabuleiro_cheio():
@@ -48,13 +53,16 @@ def jogada_valida(jogada):
     # Se a jogada não for um número de 1 a 9
     if not jogada.isdigit() or int(jogada) < 1 or int(jogada) > 9:
         # Retornar falso
+        print("Jogada inválida")
         return False
     # Se o espaço correspondente no tabuleiro não estiver vazio
-    if tabuleiro[int(jogada) - 1] != " ":
+    elif tabuleiro[int(jogada) - 1] != " ":
         # Retornar falso
+        print("Jogada inválida")
         return False
     # Se nenhuma das condições anteriores for verdadeira, retornar verdadeiro
-    return True
+    else:
+        return True
 
 # Definir uma função para obter a jogada do jogador computador
 def jogada_computador():
@@ -71,10 +79,10 @@ def jogada_computador():
 def trocar_jogador(jogador):
     # Se o jogador for "X"
     if jogador == "X":
-        # Retornar "Y"
-        return "Y"
-    # Se o jogador for "Y"
-    if jogador == "Y":
+        # Retornar "O"
+        return "O"
+    # Se o jogador for "O"
+    if jogador == "O":
         # Retornar "X"
         return "X"
 
@@ -82,15 +90,15 @@ def trocar_jogador(jogador):
 jogador = "X"
 
 # Enquanto o jogo não terminar
-while not tabuleiro_cheio() and not ganhou("X") and not ganhou("Y"):
+while not tabuleiro_cheio() and not ganhou("X") and not ganhou("O"):
     # Imprimir o tabuleiro na tela
     imprimir_tabuleiro()
     # Se o jogador for "X"
     if jogador == "X":
         # Obter a jogada do jogador humano
         jogada = jogada_humano()
-    # Se o jogador for "Y"
-    if jogador == "Y":
+    # Se o jogador for "O"
+    if jogador == "O":
         # Obter a jogada do jogador computador
         jogada = jogada_computador()
     # Marcar o espaço correspondente no tabuleiro com o símbolo do jogador
@@ -104,12 +112,46 @@ imprimir_tabuleiro()
 # Se o jogador "X" ganhou o jogo
 if ganhou("X"):
     # Imprimir uma mensagem de parabéns
-    print("Parabéns pela roubada, você ganhou!")
-# Se o jogador "Y" ganhou o jogo
-if ganhou("Y"):
+    print("Parabéns pela roubada, você ganhou! >:(")
+# Se o jogador "O" ganhou o jogo
+if ganhou("O"):
     # Imprimir uma mensagem de derrota
-    print("Você perdeu otário!")
+    print("Você perdeu otário! :p")
 # Se o tabuleiro ficou cheio e ninguém ganhou o jogo
 if tabuleiro_cheio() and not ganhou("X") and not ganhou("O"):
     # Imprimir uma mensagem de empate
     print("Deu Velha!")
+    
+class TestJogoVelhaMethods(unittest.TestCase):
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('builtins.input', side_effect=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    def test_jogo_velha_vitoria(self, mock_input, mock_stdout):
+        exec(open('Exemplo02.py').read())
+        self.assertIn("Parabéns pela roubada, você ganhou! >:(", mock_stdout.getvalue().strip())
+
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('builtins.input', side_effect=['5', '1', '2', '3', '4', '6', '7', '8', '9'])
+    def test_jogo_velha_derrota(self, mock_input, mock_stdout):
+        exec(open('Exemplo02.py').read())
+        self.assertIn("Você perdeu otário! :p", mock_stdout.getvalue().strip())
+
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('builtins.input', side_effect=['1', '5', '2', '6', '3', '4', '7', '8', '9'])
+    def test_jogo_velha_empate(self, mock_input, mock_stdout):
+        exec(open('Exemplo02.py').read())
+        self.assertIn("Deu Velha!", mock_stdout.getvalue().strip())
+
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('builtins.input', side_effect=['1', '1', '2', '3', '4', '5'])
+    def test_jogo_velha_jogada_casa_preenchida(self, mock_input, mock_stdout):
+        exec(open('Exemplo02.py').read())
+        self.assertIn("Jogada inválida", mock_stdout.getvalue().strip())
+
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('builtins.input', side_effect=['0', '10', '11', '12', '13', '14'])
+    def test_jogo_velha_jogada_fora_tabuleiro(self, mock_input, mock_stdout):
+        exec(open('Exemplo02.py').read())
+        self.assertIn("Jogada inválida", mock_stdout.getvalue().strip())
+
+if __name__ == '__main__':
+    unittest.main()
