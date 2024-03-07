@@ -13,7 +13,7 @@ class Funcionario:
             return nome_formatado
         else:
             raise ValueError("Um nome deve ser digitado.")
-
+ 
     @staticmethod
     def formatar_salario(valor):
         try:
