@@ -24,4 +24,4 @@ jobs:
 
     - name: Teste
       run: |
-         run: pytest test_funcionario.py  # Especifique o arquivo que contém os testes
+         run: pytest Exemplo01.py  # Especifique o arquivo que contém os testes
