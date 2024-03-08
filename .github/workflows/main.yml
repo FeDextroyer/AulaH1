@@ -17,11 +17,10 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Build
+    - name: Instalar dependências
       run: |
-        # Coloque aqui os comandos de construção do seu projeto Python, se necessário
-        # Exemplo: python setup.py build
+        pip install pytest  # Instale o pytest antes de executar os testes
 
-    - name: Teste
+    - name: Teste com pytest
       run: |
-         run: pytest Exemplo01.py  # Especifique o arquivo que contém os testes
+        pytest Exemplo01.py  # Especifique o arquivo que contém os testes
